@@ -625,35 +625,54 @@ async def get_payment_status(session_id: str, http_request: FastRequest, user: d
     if not txn:
         raise HTTPException(404, "Transaction not found")
 
-    sc = _stripe_checkout(http_request)
-    status_obj = await sc.get_checkout_status(session_id)
+    # Ownership check: a student can only query their own session
+    if user["role"] == "student" and txn.get("student_email", "").lower() != user["email"].lower():
+        raise HTTPException(403, "Forbidden")
 
-    # Idempotent update: only mark fee paid if not already
-    if status_obj.payment_status == "paid" and txn.get("payment_status") != "paid":
-        await db.payment_transactions.update_one(
-            {"session_id": session_id},
-            {"$set": {
-                "payment_status": status_obj.payment_status,
-                "status": status_obj.status,
-                "completed_at": datetime.now(timezone.utc).isoformat(),
-            }},
-        )
-        await db.fees.update_one(
-            {"id": txn["fee_id"]},
-            {"$set": {"status": "paid", "paid_at": datetime.now(timezone.utc).isoformat()}},
-        )
-    elif status_obj.payment_status != "paid":
-        await db.payment_transactions.update_one(
-            {"session_id": session_id},
-            {"$set": {"payment_status": status_obj.payment_status, "status": status_obj.status}},
-        )
+    # Try to fetch live status from Stripe; if SDK errors out, fall back to DB
+    try:
+        sc = _stripe_checkout(http_request)
+        status_obj = await sc.get_checkout_status(session_id)
+        live_payment_status = status_obj.payment_status
+        live_status = status_obj.status
+        amount_total = status_obj.amount_total
+        currency = status_obj.currency
 
-    return {
-        "payment_status": status_obj.payment_status,
-        "status": status_obj.status,
-        "amount_total": status_obj.amount_total,
-        "currency": status_obj.currency,
-    }
+        if live_payment_status == "paid" and txn.get("payment_status") != "paid":
+            await db.payment_transactions.update_one(
+                {"session_id": session_id},
+                {"$set": {
+                    "payment_status": live_payment_status,
+                    "status": live_status,
+                    "completed_at": datetime.now(timezone.utc).isoformat(),
+                }},
+            )
+            await db.fees.update_one(
+                {"id": txn["fee_id"]},
+                {"$set": {"status": "paid", "paid_at": datetime.now(timezone.utc).isoformat()}},
+            )
+        elif live_payment_status != "paid":
+            await db.payment_transactions.update_one(
+                {"session_id": session_id},
+                {"$set": {"payment_status": live_payment_status, "status": live_status}},
+            )
+        return {
+            "payment_status": live_payment_status,
+            "status": live_status,
+            "amount_total": amount_total,
+            "currency": currency,
+        }
+    except Exception as e:
+        logger.warning(f"Stripe status retrieve failed, falling back to DB: {e}")
+        # Re-read txn in case webhook updated it
+        txn = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0}) or txn
+        return {
+            "payment_status": txn.get("payment_status", "open"),
+            "status": txn.get("status", "open"),
+            "amount_total": int(round(float(txn.get("amount", 0)) * 100)),
+            "currency": txn.get("currency", "inr"),
+            "source": "fallback",
+        }
 
 @api.post("/webhook/stripe")
 async def stripe_webhook(request: FastRequest):

@@ -82,3 +82,44 @@ Overview (attendance %, fees due, recent notifications) · Attendance log · Mat
 - `/app/frontend/src/pages/*.jsx` (12 pages)
 - `/app/frontend/src/components/{Navbar,Footer,DashboardShell,ProtectedRoute,PublicLayout}.jsx`
 - `/app/memory/test_credentials.md` — Admin & demo logins
+
+---
+
+## Iteration 3 (May 2026) — Branding, Departments, Placements, Projects, Stripe
+
+### Branding update
+- All "CCAUVERY" → "Cauvery College" / "Gonikoppal · Est. 1968" (Navbar, Footer, copyright, all headings)
+- HTML `<title>` and meta tags updated for SEO with real college info + OG tags
+
+### New courses
+- **BA (Bachelor of Arts)** — humanities, languages, history, civil services prep
+- **BSc (Bachelor of Science)** — PCM/PCB, labs, research-track
+- Total now 5 courses: BCA, BBA, BCom, BA, BSc
+
+### New pages
+- **/placements** — KPI cards (98%, ₹4.5LPA avg, ₹12LPA max, 150+ placed), 10 recruiter logos (Infosys, Wipro, TCS, Accenture, Capgemini, Happiest Minds, Equalize RCM, Invenzo, Sigma, SPTech), top demand skills, training focus, placed students testimonials, CTA
+- **/projects** — 6 student projects (Cauvery College App, ClassBee — both real & on Play Store; KodaguKart, FieldVision, VoxNote, Pixel Coorg — sample projects with real tech stack), category filter, tags
+
+### Real Stripe checkout (replacing mock pay)
+- `/api/fees/{id}/checkout` creates Stripe Checkout Session, stores `payment_transactions` doc with status='initiated'
+- `/api/payments/status/{session_id}` polls live status with **graceful fallback to DB** when Stripe SDK retrieve fails (known limitation of sk_test_emergent test mode)
+- `/api/webhook/stripe` handles webhook events to mark fee paid server-side
+- Frontend redirects student to checkout.stripe.com, polls on return
+
+### Test results (iter3)
+- Backend: 12/13 tests pass — 1 critical bug found (`/payments/status` 500) → **FIXED with try/except fallback** + ownership check
+- Frontend: all 5 new courses listed, 6 projects, 10 recruiter logos, smooth page transitions, branding updated
+
+### Skipped (per user choice)
+- 📧 Email integration (Resend/SendGrid) — user chose "b" (no email)
+
+### Known minor items
+- First Stripe checkout call after backend cold-start can take ~30s (subsequent ~3s)
+- Old `/api/fees/{id}/pay` (mock) endpoint still exists for backward compatibility
+- server.py is now ~1300 lines — candidate for module split (P2 refactor)
+
+### Next backlog
+- P0: Email integration when user is ready
+- P1: Module split of server.py into routers/auth, routers/academics, routers/payments, routers/admin
+- P1: Tighten CORS_ORIGINS (currently *) + remove old /pay mock endpoint
+- P2: Stripe webhook signature verification end-to-end (currently library handles it but unverified in production setup)
