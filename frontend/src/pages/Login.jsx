@@ -30,12 +30,14 @@ export default function Login() {
     return (
         <div className="min-h-[calc(100vh-5rem)] grid lg:grid-cols-2" data-testid="login-page">
             <div className="hidden lg:block relative">
-                <img src="https://images.unsplash.com/photo-1758270705641-acf09b68a91f?auto=format&fit=crop&w=1200&q=80" alt="" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-primary/70" />
+                <img src="https://res.cloudinary.com/dveiiup8m/image/upload/v1777906329/gallery-assets/college/6.png" alt="Cauvery College campus" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-primary/75" />
                 <div className="absolute inset-0 flex flex-col justify-end p-12 text-white">
-                    <GraduationCap className="w-12 h-12 text-secondary mb-4" />
-                    <h2 className="font-outfit font-black text-4xl leading-tight">Welcome back to <span className="text-secondary">CCAUVERY</span>.</h2>
-                    <p className="mt-3 text-white/80 max-w-md">Access your dashboard to view attendance, materials, fees and more.</p>
+                    <div className="bg-white rounded-xl p-3 inline-block mb-5 shadow-2xl self-start">
+                        <img src="/cauvery-logo.jpg" alt="Cauvery College" className="h-16 w-auto" />
+                    </div>
+                    <h2 className="font-outfit font-black text-4xl leading-tight">Welcome back to <span className="text-secondary">Cauvery College</span>.</h2>
+                    <p className="mt-3 text-white/80 max-w-md">Education for Self-Reliance & Self-Realization. Access your dashboard for attendance, materials, fees and more.</p>
                 </div>
             </div>
 

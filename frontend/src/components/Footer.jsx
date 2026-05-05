@@ -6,12 +6,8 @@ export default function Footer() {
         <footer className="bg-primary text-white" data-testid="footer">
             <div className="container-x py-16 grid lg:grid-cols-4 gap-12">
                 <div>
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-12 h-12 rounded-xl bg-secondary text-primary font-outfit font-black text-2xl flex items-center justify-center">C</div>
-                        <div>
-                            <div className="font-outfit font-bold text-xl">Cauvery College</div>
-                            <div className="text-xs uppercase tracking-widest text-secondary/80">Gonikoppal · Est. 1968</div>
-                        </div>
+                    <div className="bg-white rounded-xl p-3 inline-block mb-4 shadow-lg">
+                        <img src="/cauvery-logo.jpg" alt="Cauvery College, Gonikoppal" className="h-16 w-auto" />
                     </div>
                     <p className="text-white/70 text-sm leading-relaxed">
                         Cauvery College, Gonikoppal — established 15 July 1968. Empowering rural Kodagu (Coorg) through quality education for over five decades. Named after Mother Cauvery, a symbol of purity, knowledge and service.

@@ -11,9 +11,11 @@ export default function DashboardShell({ title, navItems }) {
         <div className="min-h-screen bg-background flex" data-testid="dashboard-shell">
             <aside className="hidden lg:flex flex-col w-72 bg-primary text-white p-6 sticky top-0 h-screen">
                 <Link to="/" className="flex items-center gap-3 mb-10">
-                    <div className="w-11 h-11 rounded-xl bg-secondary text-primary font-outfit font-black text-xl flex items-center justify-center">C</div>
-                    <div>
-                        <div className="font-outfit font-bold text-lg">CCAUVERY</div>
+                    <div className="bg-white rounded-lg p-2">
+                        <img src="/cauvery-logo.jpg" alt="Cauvery College" className="h-9 w-auto" />
+                    </div>
+                    <div className="leading-tight">
+                        <div className="font-outfit font-bold text-base">Cauvery College</div>
                         <div className="text-[10px] uppercase tracking-widest text-secondary/80">{title}</div>
                     </div>
                 </Link>
@@ -53,7 +55,9 @@ export default function DashboardShell({ title, navItems }) {
             {/* Mobile header */}
             <div className="lg:hidden fixed top-0 inset-x-0 z-30 bg-primary text-white p-4 flex items-center justify-between">
                 <Link to="/" className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-lg bg-secondary text-primary font-black flex items-center justify-center">C</div>
+                    <div className="bg-white rounded-md p-1">
+                        <img src="/cauvery-logo.jpg" alt="Cauvery College" className="h-7 w-auto" />
+                    </div>
                     <span className="font-bold">{title}</span>
                 </Link>
                 <button onClick={() => { logout(); navigate("/"); }} className="text-white/80"><LogOut className="w-5 h-5" /></button>

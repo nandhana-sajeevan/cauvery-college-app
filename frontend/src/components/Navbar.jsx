@@ -27,13 +27,11 @@ export default function Navbar() {
         <header className="fixed top-0 inset-x-0 z-50 glass-light" data-testid="navbar">
             <div className="container-x flex items-center justify-between h-20">
                 <Link to="/" className="flex items-center gap-3 group" data-testid="logo-link">
-                    <div className="w-11 h-11 rounded-xl bg-primary text-secondary flex items-center justify-center font-outfit font-black text-xl shadow-lg group-hover:rotate-6 transition-transform">
-                        C
-                    </div>
-                    <div className="leading-tight">
-                        <div className="font-outfit font-bold text-primary text-lg tracking-tight">Cauvery College</div>
-                        <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Gonikoppal · Est. 1968</div>
-                    </div>
+                    <img
+                        src="/cauvery-logo.jpg"
+                        alt="Cauvery College, Gonikoppal"
+                        className="h-12 w-auto transition-transform duration-300 group-hover:scale-105"
+                    />
                 </Link>
 
                 <nav className="hidden lg:flex items-center gap-7">
