@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import CountUp from "react-countup";
-import { ArrowRight, Award, BookOpen, Users, GraduationCap, Sparkles, Calendar, ChevronRight } from "lucide-react";
+import { ArrowRight, Award, BookOpen, Users, GraduationCap, Sparkles, Calendar, ChevronRight, Code2, ExternalLink } from "lucide-react";
 import api from "@/lib/api";
 
 const HERO = "https://res.cloudinary.com/dveiiup8m/image/upload/v1777906329/gallery-assets/college/6.png";
@@ -29,10 +29,12 @@ const TESTIMONIALS = [
 
 export default function Home() {
     const [events, setEvents] = useState([]);
+    const [projects, setProjects] = useState([]);
     const [tIndex, setTIndex] = useState(0);
 
     useEffect(() => {
         api.get("/events").then(r => setEvents(r.data.slice(0, 3))).catch(() => {});
+        api.get("/projects").then(r => setProjects(r.data.slice(0, 3))).catch(() => {});
     }, []);
 
     useEffect(() => {
@@ -184,6 +186,43 @@ export default function Home() {
                             <button key={i} onClick={() => setTIndex(i)}
                                 className={`h-1.5 rounded-full transition-all ${tIndex === i ? "w-10 bg-secondary" : "w-4 bg-white/30"}`}
                                 aria-label={`Testimonial ${i + 1}`} />
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* PROJECTS TEASER */}
+            <section className="section bg-white border-y border-border">
+                <div className="container-x">
+                    <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12">
+                        <div>
+                            <p className="text-secondary text-sm font-bold uppercase tracking-[0.25em] mb-3">Built by Cauverians</p>
+                            <h2 className="font-outfit font-black text-4xl lg:text-5xl text-primary leading-tight">Live apps. Real students. Real impact.</h2>
+                        </div>
+                        <Link to="/projects" className="text-primary font-medium inline-flex items-center gap-2 hover:text-secondary">
+                            See all projects <ArrowRight className="w-4 h-4" />
+                        </Link>
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-6">
+                        {projects.map((p, i) => (
+                            <motion.article key={p.id}
+                                initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}
+                                className="bg-background rounded-2xl border border-border overflow-hidden lift">
+                                <div className="aspect-[16/10] overflow-hidden bg-primary/5 flex items-center justify-center p-4">
+                                    <img src={p.image} alt={p.title} className="w-full h-full object-cover rounded-lg" />
+                                </div>
+                                <div className="p-6">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Code2 className="w-4 h-4 text-secondary" />
+                                        <span className="text-xs uppercase tracking-widest font-bold text-secondary">{p.category}</span>
+                                    </div>
+                                    <h3 className="font-outfit font-bold text-xl text-primary leading-snug">{p.title}</h3>
+                                    <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{p.description}</p>
+                                    {p.link && <a href={p.link} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-1 text-primary hover:text-secondary text-sm font-semibold">
+                                        Live <ExternalLink className="w-3.5 h-3.5" />
+                                    </a>}
+                                </div>
+                            </motion.article>
                         ))}
                     </div>
                 </div>

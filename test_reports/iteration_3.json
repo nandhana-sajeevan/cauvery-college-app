@@ -1,0 +1,47 @@
+{
+  "summary": "Iteration 3 testing complete. Backend: 12/13 pytest cases pass (Stripe checkout creation, BA/BSC courses, projects CRUD, RBAC all verified). Frontend: title/navbar/footer branding, /placements (4 KPIs + 10 recruiter logos as images), /projects (6+ cards), /courses (5), Stripe pay-with-Stripe redirect to checkout.stripe.com all working. ONE CRITICAL BUG: GET /api/payments/status/{session_id} returns 500 because emergentintegrations library cannot retrieve the session it just created via the same STRIPE_API_KEY=sk_test_emergent (Stripe says 'No such checkout.session'). This breaks the success-return polling in StudentDashboard Fees.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "GET /api/payments/status/{session_id}", "issue": "Returns 500 InvalidRequestError 'No such checkout.session: cs_test_...' for sessions created seconds earlier via the SAME backend instance using the SAME STRIPE_API_KEY. Backend traceback: emergentintegrations/payments/stripe/checkout.py:191 stripe.checkout.Session.retrieve(). The sk_test_emergent key appears to create sessions on one Stripe sandbox account but retrieve via another (or the public-facing pk in checkout URL belongs to a different account: pk_test_51RiH9TFfKOFR3CQU... visible in checkout iframe URL). This breaks the post-payment polling flow in /student-dashboard/fees?session_id=...", "priority": "CRITICAL"}
+    ],
+    "minor": [
+      {"endpoint": "POST /api/fees/{id}/checkout", "issue": "First call after a cold start can take ~30s (Stripe API latency); subsequent calls ~3s. Increase frontend timeout/loader."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Stripe payment return polling", "issue": "When user returns from Stripe to /student-dashboard/fees?session_id=..., the polling call to /api/payments/status/{session_id} will hit the 500 bug above and the fee will never auto-update to 'paid' in UI even though webhook may have updated DB.", "affected_selectors": ["[data-testid=\"fees-tab\"]"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter3.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/iter3_results.xml"
+  ],
+  "action_items": [
+    "Investigate emergentintegrations Stripe session retrieve mismatch — verify STRIPE_API_KEY env at runtime, ensure StripeCheckout instance uses same secret key for both create and retrieve. Possibly the sk_test_emergent placeholder maps to two different test accounts internally. Add try/except around get_checkout_status in /api/payments/status to return 502 with friendly message instead of 500.",
+    "Optionally: rely on Stripe webhook (already wired at /api/webhook/stripe) to update fee paid status, and have polling endpoint fall back to reading payment_transactions doc from Mongo if Stripe API call fails.",
+    "Frontend: surface a friendly fallback when polling returns 5xx (currently student sees fee still 'pending' silently)."
+  ],
+  "critical_code_review_comments": [
+    "server.py is now ~1200 lines — exceeds the 700-line guideline. Strongly recommend splitting into routers/auth.py, routers/academics.py, routers/payments.py, routers/admin.py, models/.",
+    "CORS_ORIGINS=* combined with allow_credentials=True is invalid per CORS spec; browsers will refuse to send cookies. Set explicit origins if cookie auth is desired.",
+    "_stripe_checkout() is recreated per request — fine for now but consider caching at module level since webhook_url is derived from request.base_url.",
+    "/api/payments/status route does not validate that the session belongs to the authenticated user (only that txn exists). Add: if user.role==student and txn.student_email != user.email -> 403.",
+    "Old /api/fees/{id}/pay (mock) is still active and bypasses Stripe — could be abused by any logged-in student. Either gate behind admin-only or remove now that Stripe is real.",
+    "seed_admin and seed_demo_users are idempotent — good.",
+    "data-testid coverage on Placements/Projects pages is good (placements-page, projects-page, project-card-{id}, placement-kpi-{i})."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter3.py (new)"
+  ],
+  "success_rate": {"backend": "92% (12/13 pytest in iter3 + previous iter1 38/40)", "frontend": "95% (all UI flows render & integrate; only post-payment polling will silently fail due to backend bug)"},
+  "test_credentials": "admin@ccauvery.edu/Admin@123, faculty@ccauvery.edu/Faculty@123, student@ccauvery.edu/Student@123 — all login + role redirects verified",
+  "seed_data_creation": "Created TEST_ prefixed fees, projects, materials during testing. Stripe sessions created in sandbox (5+). Not cleaned up.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Frontend was restarted once to pick up new index.html title (title was stale 'Emergent | Fullstack App' before restart, now correct). Stripe checkout creation works (verified UI redirect to https://checkout.stripe.com/c/pay/cs_test_... with ₹1,500 sandbox page). The 500 bug in /api/payments/status is reproducible: create a checkout session, then GET /api/payments/status/{session_id} -> 500 'No such checkout.session'. Webhook endpoint /api/webhook/stripe was NOT directly tested (Stripe needs to call it). Run regression tests with: REACT_APP_BACKEND_URL=$(grep REACT_APP_BACKEND_URL /app/frontend/.env | cut -d= -f2) python -m pytest /app/backend/tests/ -v",
+  "rca of the issue": "Stripe payment status RCA — emergentintegrations.payments.stripe.checkout.StripeCheckout.create_checkout_session() and get_checkout_status() are both initialised with api_key=os.environ['STRIPE_API_KEY']='sk_test_emergent'. The create call succeeds and returns a session URL containing pk_test_51RiH9TFfKOFR3CQU... (a Stripe-managed Emergent test account). However when get_checkout_status calls stripe.checkout.Session.retrieve(session_id) using the secret key, Stripe returns 'No such checkout.session'. This indicates the secret key context used for retrieve does not match the one used during create — possibly because the emergentintegrations library proxies create through Emergent's backend but retrieve directly hits Stripe with a different key. Reproduction: 1) login as student, 2) POST /api/fees/{any_pending_id}/checkout -> returns valid URL, 3) GET /api/payments/status/{session_id} -> 500. Mitigation: a) wrap get_checkout_status in try/except, fall back to DB status, b) trust the webhook handler to mark fee paid (already wired), c) report to emergentintegrations maintainers."
+}

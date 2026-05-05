@@ -220,6 +220,24 @@ class Fee(FeeIn):
     paid_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class ProjectIn(BaseModel):
+    title: str
+    student_name: str
+    batch: str
+    category: str
+    description: str
+    image: Optional[str] = None
+    link: Optional[str] = None
+    tags: List[str] = []
+
+class Project(ProjectIn):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class CheckoutCreateIn(BaseModel):
+    fee_id: str
+    origin_url: str
+
 # =============================================================================
 # AUTH ROUTES
 # =============================================================================
@@ -524,6 +542,144 @@ async def pay_fee(fee_id: str, user: dict = Depends(get_current_user)):
     return {"ok": True, "message": "Payment recorded (mock)."}
 
 # =============================================================================
+# PROJECTS (Student showcase)
+# =============================================================================
+@api.get("/projects", response_model=List[Project])
+async def list_projects():
+    docs = await db.projects.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    for d in docs:
+        if isinstance(d.get("created_at"), str):
+            d["created_at"] = datetime.fromisoformat(d["created_at"])
+    return docs
+
+@api.post("/projects", response_model=Project)
+async def create_project(data: ProjectIn, _: dict = Depends(require_role("admin", "faculty"))):
+    p = Project(**data.model_dump())
+    doc = p.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.projects.insert_one(doc)
+    return p
+
+# =============================================================================
+# STRIPE CHECKOUT (Fees)
+# =============================================================================
+from fastapi import Request as FastRequest
+from emergentintegrations.payments.stripe.checkout import (
+    StripeCheckout, CheckoutSessionRequest,
+)
+
+STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY", "")
+
+def _stripe_checkout(http_request: FastRequest) -> StripeCheckout:
+    host_url = str(http_request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    return StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+
+@api.post("/fees/{fee_id}/checkout")
+async def create_fee_checkout(fee_id: str, body: CheckoutCreateIn, http_request: FastRequest, user: dict = Depends(get_current_user)):
+    fee = await db.fees.find_one({"id": fee_id}, {"_id": 0})
+    if not fee:
+        raise HTTPException(404, "Fee not found")
+    if user["role"] == "student" and fee["student_email"].lower() != user["email"].lower():
+        raise HTTPException(403, "Forbidden")
+    if fee["status"] == "paid":
+        raise HTTPException(400, "Fee already paid")
+
+    origin = body.origin_url.rstrip("/")
+    success_url = f"{origin}/student-dashboard/fees?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin}/student-dashboard/fees?cancelled=1"
+    metadata = {
+        "fee_id": fee_id,
+        "student_email": fee["student_email"],
+        "course_code": fee["course_code"],
+        "semester": fee["semester"],
+    }
+
+    sc = _stripe_checkout(http_request)
+    req = CheckoutSessionRequest(
+        amount=float(fee["amount"]),
+        currency="inr",
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata=metadata,
+    )
+    session = await sc.create_checkout_session(req)
+
+    await db.payment_transactions.insert_one({
+        "id": str(uuid.uuid4()),
+        "session_id": session.session_id,
+        "fee_id": fee_id,
+        "student_email": fee["student_email"],
+        "amount": float(fee["amount"]),
+        "currency": "inr",
+        "metadata": metadata,
+        "payment_status": "initiated",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+
+    return {"url": session.url, "session_id": session.session_id}
+
+@api.get("/payments/status/{session_id}")
+async def get_payment_status(session_id: str, http_request: FastRequest, user: dict = Depends(get_current_user)):
+    txn = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
+    if not txn:
+        raise HTTPException(404, "Transaction not found")
+
+    sc = _stripe_checkout(http_request)
+    status_obj = await sc.get_checkout_status(session_id)
+
+    # Idempotent update: only mark fee paid if not already
+    if status_obj.payment_status == "paid" and txn.get("payment_status") != "paid":
+        await db.payment_transactions.update_one(
+            {"session_id": session_id},
+            {"$set": {
+                "payment_status": status_obj.payment_status,
+                "status": status_obj.status,
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+            }},
+        )
+        await db.fees.update_one(
+            {"id": txn["fee_id"]},
+            {"$set": {"status": "paid", "paid_at": datetime.now(timezone.utc).isoformat()}},
+        )
+    elif status_obj.payment_status != "paid":
+        await db.payment_transactions.update_one(
+            {"session_id": session_id},
+            {"$set": {"payment_status": status_obj.payment_status, "status": status_obj.status}},
+        )
+
+    return {
+        "payment_status": status_obj.payment_status,
+        "status": status_obj.status,
+        "amount_total": status_obj.amount_total,
+        "currency": status_obj.currency,
+    }
+
+@api.post("/webhook/stripe")
+async def stripe_webhook(request: FastRequest):
+    body = await request.body()
+    signature = request.headers.get("Stripe-Signature", "")
+    try:
+        sc = _stripe_checkout(request)
+        evt = await sc.handle_webhook(body, signature)
+    except Exception as e:
+        logger.error(f"Stripe webhook error: {e}")
+        return {"received": False}
+
+    if evt.payment_status == "paid":
+        txn = await db.payment_transactions.find_one({"session_id": evt.session_id}, {"_id": 0})
+        if txn and txn.get("payment_status") != "paid":
+            await db.payment_transactions.update_one(
+                {"session_id": evt.session_id},
+                {"$set": {"payment_status": "paid", "status": "complete", "completed_at": datetime.now(timezone.utc).isoformat()}},
+            )
+            await db.fees.update_one(
+                {"id": txn["fee_id"]},
+                {"$set": {"status": "paid", "paid_at": datetime.now(timezone.utc).isoformat()}},
+            )
+    return {"received": True}
+
+# =============================================================================
 # ADMIN: USERS
 # =============================================================================
 @api.get("/users")
@@ -661,17 +817,10 @@ async def seed_courses():
             "description": "A rigorous foundation in accounting, taxation, finance, economics, banking and corporate law. Designed for careers in Chartered Accountancy, banking, finance, taxation and the global commerce ecosystem. Mangalore University-affiliated curriculum with practical exposure through Tally, GST filing and audit simulations.",
             "eligibility": "Pass in 10+2 in Commerce / Arts / Science from any recognised board, with minimum 40% aggregate.",
             "syllabus": [
-                "Financial Accounting",
-                "Corporate Accounting",
-                "Cost & Management Accounting",
-                "Income Tax & GST",
-                "Business Law & Company Law",
-                "Auditing & Assurance",
-                "Banking & Insurance",
-                "Financial Management",
-                "International Business",
-                "Business Statistics & Mathematics",
-                "Tally ERP & Computerised Accounting",
+                "Financial Accounting", "Corporate Accounting", "Cost & Management Accounting",
+                "Income Tax & GST", "Business Law & Company Law", "Auditing & Assurance",
+                "Banking & Insurance", "Financial Management", "International Business",
+                "Business Statistics & Mathematics", "Tally ERP & Computerised Accounting",
                 "Entrepreneurship & Small Business Management",
             ],
             "careers": [
@@ -680,6 +829,60 @@ async def seed_courses():
                 "Auditor", "Stock Broker", "Insurance Specialist",
             ],
             "image": "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=900&q=80",
+        },
+        {
+            "code": "BA", "name": "Bachelor of Arts",
+            "duration": "3 Years (6 Semesters)", "fees": 28000,
+            "description": "A multi-disciplinary humanities programme exploring history, political science, economics, sociology, languages and journalism. Cauvery's BA programme nurtures critical thinkers, eloquent communicators and culturally rooted leaders — empowering Kodagu's youth with a globally relevant liberal-arts foundation.",
+            "eligibility": "Pass in 10+2 from any recognised board (any stream), with minimum 40% aggregate. Students from all language and cultural backgrounds welcome.",
+            "syllabus": [
+                "Languages — Kannada / English / Hindi",
+                "History of India & World History",
+                "Political Science & Indian Constitution",
+                "Sociology & Indian Society",
+                "Economics — Micro & Macro",
+                "Public Administration",
+                "Journalism & Mass Communication",
+                "Psychology Fundamentals",
+                "Environmental Studies",
+                "Indian Heritage & Culture",
+                "Research Methodology",
+                "Communicative English & Writing Skills",
+            ],
+            "careers": [
+                "Civil Services (UPSC / KAS)", "Journalist & Content Writer",
+                "Public Policy Analyst", "Social Worker / NGO Lead",
+                "Teacher & Educator", "Researcher", "Translator / Interpreter",
+                "Marketing & Communications", "Lawyer (after LLB)",
+            ],
+            "image": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=900&q=80",
+        },
+        {
+            "code": "BSC", "name": "Bachelor of Science",
+            "duration": "3 Years (6 Semesters)", "fees": 36000,
+            "description": "A rigorous science programme combining Physics, Chemistry, Mathematics and Biology with hands-on laboratory work and field studies. Designed for students who want to pursue careers in scientific research, engineering, healthcare, biotech, data analytics or higher studies (M.Sc., PhD, MBBS-prep, B.Ed.).",
+            "eligibility": "Pass in 10+2 in Science (PCM / PCB) from any recognised board, with minimum 45% aggregate (40% for SC/ST/OBC).",
+            "syllabus": [
+                "Physics — Mechanics, Electromagnetism, Optics, Modern Physics",
+                "Chemistry — Inorganic, Organic, Physical Chemistry",
+                "Mathematics — Calculus, Algebra, Statistics",
+                "Biology / Botany / Zoology (for PCB combination)",
+                "Computer Science Fundamentals",
+                "Laboratory Practicals (every semester)",
+                "Environmental Science",
+                "Research Methodology",
+                "Biotechnology & Microbiology Electives",
+                "Statistics & Data Analysis",
+                "Project Work & Field Study",
+                "Communicative English",
+            ],
+            "careers": [
+                "Research Scientist", "Lab Technician", "Data Analyst",
+                "Biotechnologist", "Pharma Associate", "Quality Analyst",
+                "Higher Studies — M.Sc., PhD, MBBS prep",
+                "Teacher / Educator (after B.Ed.)", "Forensic Scientist",
+            ],
+            "image": "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=900&q=80",
         },
     ]
     for c in courses_data:
@@ -891,6 +1094,77 @@ async def seed_demo_data():
             doc["created_at"] = doc["created_at"].isoformat()
             await db.notifications.insert_one(doc)
 
+async def seed_projects():
+    if await db.projects.count_documents({}) > 0:
+        return
+    projects = [
+        {
+            "title": "Cauvery College App",
+            "student_name": "BCA Student Team",
+            "batch": "BCA 2024",
+            "category": "Mobile App",
+            "description": "The official Cauvery College mobile companion — students access timetables, notifications, attendance, fee status and event calendar in one place. Live on Play Store.",
+            "image": "https://www.bcacauverycollege.com/images/uploads/apps-ccg/logo.png",
+            "link": "https://play.google.com",
+            "tags": ["Android", "Kotlin", "Firebase", "Live"],
+        },
+        {
+            "title": "ClassBee",
+            "student_name": "BCA Student Team",
+            "batch": "BCA 2023",
+            "category": "Mobile App",
+            "description": "Smart attendance & notification management app used by faculty across departments. Cuts manual roll-call time by 80%.",
+            "image": "https://www.bcacauverycollege.com/images/uploads/apps-classbee/logo.png",
+            "link": "https://play.google.com",
+            "tags": ["Android", "Java", "REST API", "Live"],
+        },
+        {
+            "title": "KodaguKart — Local Coffee Marketplace",
+            "student_name": "Aishwarya P & Team",
+            "batch": "BCA 2024",
+            "category": "Web App",
+            "description": "Direct-to-consumer e-commerce platform for Kodagu's coffee growers. Built with React, Node.js and Stripe. Showcased at Techantlers 2024.",
+            "image": "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=900&q=80",
+            "link": None,
+            "tags": ["React", "Node.js", "MongoDB", "Stripe"],
+        },
+        {
+            "title": "FieldVision — AI Crop Disease Detector",
+            "student_name": "Karthik B & Team",
+            "batch": "BCA 2024",
+            "category": "AI / ML",
+            "description": "Mobile app that detects diseases in coffee, pepper and cardamom crops via phone camera. Trained on a custom Kodagu dataset (94% accuracy). Built during the 5-day ML workshop.",
+            "image": "https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=900&q=80",
+            "link": None,
+            "tags": ["TensorFlow", "Python", "Flutter", "AI"],
+        },
+        {
+            "title": "VoxNote — Voice-First Study Companion",
+            "student_name": "Meghana K",
+            "batch": "BCA 2025",
+            "category": "AI / ML",
+            "description": "Records lectures, transcribes them in Kannada/English, and auto-generates flashcards using GPT. Won 1st place at the AI/ML Hackathon Series.",
+            "image": "https://images.unsplash.com/photo-1589254065878-42c9da997008?auto=format&fit=crop&w=900&q=80",
+            "link": None,
+            "tags": ["OpenAI", "Whisper", "React Native"],
+        },
+        {
+            "title": "Pixel Coorg — Tourism AR Experience",
+            "student_name": "Rohan T & Team",
+            "batch": "BCA 2025",
+            "category": "Game / AR",
+            "description": "Augmented Reality tour of Kodagu's heritage sites — Madikeri Fort, Talakaveri, Iruppu Falls. Built with Unity and integrated with Google ARCore.",
+            "image": "https://images.unsplash.com/photo-1510552776732-03e61cf4b144?auto=format&fit=crop&w=900&q=80",
+            "link": None,
+            "tags": ["Unity", "C#", "ARCore"],
+        },
+    ]
+    for p in projects:
+        obj = Project(**p)
+        doc = obj.model_dump()
+        doc["created_at"] = doc["created_at"].isoformat()
+        await db.projects.insert_one(doc)
+
 @app.on_event("startup")
 async def startup():
     await db.users.create_index("email", unique=True)
@@ -901,6 +1175,7 @@ async def startup():
     await seed_faculty()
     await seed_events()
     await seed_alumni()
+    await seed_projects()
     await seed_demo_data()
 
 @app.on_event("shutdown")

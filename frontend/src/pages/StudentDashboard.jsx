@@ -11,9 +11,7 @@ const NAV = [
     { to: "/student-dashboard/materials", label: "Materials", icon: FileText },
     { to: "/student-dashboard/fees", label: "Fees", icon: IndianRupee },
     { to: "/student-dashboard/notifications", label: "Notifications", icon: Bell },
-];
-
-export default function StudentDashboard() {
+];export default function StudentDashboard() {
     return (
         <Routes>
             <Route element={<DashboardShell title="Student Portal" navItems={NAV} />}>
@@ -144,17 +142,69 @@ function Materials() {
 function Fees() {
     const [list, setList] = useState([]);
     const [busy, setBusy] = useState(null);
+    const [polling, setPolling] = useState(null);
+    const [msg, setMsg] = useState("");
     const load = () => api.get("/fees").then(r => setList(r.data));
+
     useEffect(() => { load(); }, []);
+
+    // Detect return from Stripe
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const sessionId = params.get("session_id");
+        const cancelled = params.get("cancelled");
+        if (cancelled) {
+            setMsg("Payment cancelled. You can try again anytime.");
+            window.history.replaceState({}, "", "/student-dashboard/fees");
+            return;
+        }
+        if (!sessionId) return;
+        setPolling(sessionId);
+        setMsg("Verifying payment with Stripe...");
+        let attempts = 0;
+        const poll = async () => {
+            attempts += 1;
+            try {
+                const { data } = await api.get(`/payments/status/${sessionId}`);
+                if (data.payment_status === "paid") {
+                    setMsg("Payment successful! Your fee has been marked paid.");
+                    setPolling(null);
+                    await load();
+                    window.history.replaceState({}, "", "/student-dashboard/fees");
+                    return;
+                }
+                if (data.status === "expired" || attempts >= 8) {
+                    setMsg("Payment session expired or not completed. Please try again.");
+                    setPolling(null);
+                    return;
+                }
+                setTimeout(poll, 2000);
+            } catch {
+                setMsg("Could not verify payment. Please refresh.");
+                setPolling(null);
+            }
+        };
+        poll();
+    }, []);
+
     const pay = async (id) => {
-        setBusy(id);
-        await api.post(`/fees/${id}/pay`);
-        await load();
-        setBusy(null);
+        setBusy(id); setMsg("");
+        try {
+            const { data } = await api.post(`/fees/${id}/checkout`, {
+                fee_id: id,
+                origin_url: window.location.origin,
+            });
+            window.location.href = data.url;
+        } catch (err) {
+            setMsg(err.response?.data?.detail || "Could not start checkout");
+            setBusy(null);
+        }
     };
+
     return (
         <div data-testid="student-fees">
             <h1 className="font-outfit font-black text-3xl text-primary mb-6">Fees</h1>
+            {msg && <div className="mb-5 p-4 rounded-xl bg-secondary/10 border border-secondary/30 text-primary text-sm">{msg}</div>}
             <div className="space-y-3">
                 {list.map(f => (
                     <div key={f.id} className="bg-white p-6 rounded-xl border border-border flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -165,14 +215,14 @@ function Fees() {
                         <div className="flex items-center gap-3">
                             <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${f.status === "paid" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{f.status}</span>
                             {f.status === "pending" && (
-                                <button onClick={() => pay(f.id)} disabled={busy === f.id} className="btn-gold px-5 py-2 rounded-full text-sm disabled:opacity-50" data-testid={`pay-fee-${f.id}`}>
-                                    {busy === f.id ? "Processing..." : "Pay now"}
+                                <button onClick={() => pay(f.id)} disabled={busy === f.id || !!polling} className="btn-gold px-5 py-2 rounded-full text-sm disabled:opacity-50" data-testid={`pay-fee-${f.id}`}>
+                                    {busy === f.id ? "Redirecting..." : "Pay with Stripe"}
                                 </button>
                             )}
                         </div>
                     </div>
                 ))}
-                <p className="text-xs text-muted-foreground italic">* Payments are recorded in mock mode. Actual payment gateway integration coming soon.</p>
+                <p className="text-xs text-muted-foreground italic">* Powered by Stripe (test mode). Use card 4242 4242 4242 4242, any future expiry, any CVC.</p>
             </div>
         </div>
     );

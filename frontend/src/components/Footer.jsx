@@ -9,12 +9,12 @@ export default function Footer() {
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-12 h-12 rounded-xl bg-secondary text-primary font-outfit font-black text-2xl flex items-center justify-center">C</div>
                         <div>
-                            <div className="font-outfit font-bold text-xl">CCAUVERY</div>
-                            <div className="text-xs uppercase tracking-widest text-secondary/80">Cauvery College</div>
+                            <div className="font-outfit font-bold text-xl">Cauvery College</div>
+                            <div className="text-xs uppercase tracking-widest text-secondary/80">Gonikoppal · Est. 1968</div>
                         </div>
                     </div>
                     <p className="text-white/70 text-sm leading-relaxed">
-                        Cauvery College Gonikoppal — established 1968. Empowering rural Kodagu through quality education for over five decades. Named after Mother Cauvery, a symbol of purity, knowledge and service.
+                        Cauvery College, Gonikoppal — established 15 July 1968. Empowering rural Kodagu (Coorg) through quality education for over five decades. Named after Mother Cauvery, a symbol of purity, knowledge and service.
                     </p>
                 </div>
 
@@ -24,7 +24,8 @@ export default function Footer() {
                         <li><Link to="/about" className="hover:text-secondary">About Us</Link></li>
                         <li><Link to="/courses" className="hover:text-secondary">Programmes</Link></li>
                         <li><Link to="/admissions" className="hover:text-secondary">Admissions</Link></li>
-                        <li><Link to="/faculty" className="hover:text-secondary">Faculty</Link></li>
+                        <li><Link to="/placements" className="hover:text-secondary">Placements</Link></li>
+                        <li><Link to="/projects" className="hover:text-secondary">Student Projects</Link></li>
                         <li><Link to="/events" className="hover:text-secondary">Events</Link></li>
                     </ul>
                 </div>
@@ -55,8 +56,8 @@ export default function Footer() {
 
             <div className="border-t border-white/10">
                 <div className="container-x py-5 flex flex-col md:flex-row justify-between items-center text-xs text-white/60">
-                    <p>© {new Date().getFullYear()} Cauvery College Gonikoppal. All rights reserved.</p>
-                    <p className="mt-2 md:mt-0">Empowering Education for the Future</p>
+                    <p>© {new Date().getFullYear()} Cauvery College, Gonikoppal. All rights reserved.</p>
+                    <p className="mt-2 md:mt-0">Education for Self-Reliance and Self-Realization</p>
                 </div>
             </div>
         </footer>

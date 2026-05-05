@@ -9,9 +9,10 @@ const links = [
     { to: "/about", label: "About" },
     { to: "/courses", label: "Courses" },
     { to: "/admissions", label: "Admissions" },
+    { to: "/placements", label: "Placements" },
+    { to: "/projects", label: "Projects" },
     { to: "/faculty", label: "Faculty" },
     { to: "/events", label: "Events" },
-    { to: "/alumni", label: "Alumni" },
     { to: "/contact", label: "Contact" },
 ];
 
@@ -30,8 +31,8 @@ export default function Navbar() {
                         C
                     </div>
                     <div className="leading-tight">
-                        <div className="font-outfit font-bold text-primary text-lg tracking-tight">CCAUVERY</div>
-                        <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Cauvery College</div>
+                        <div className="font-outfit font-bold text-primary text-lg tracking-tight">Cauvery College</div>
+                        <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Gonikoppal · Est. 1968</div>
                     </div>
                 </Link>
 

@@ -16,6 +16,8 @@ import Alumni from "@/pages/Alumni";
 import Contact from "@/pages/Contact";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import Placements from "@/pages/Placements";
+import Projects from "@/pages/Projects";
 import AdminDashboard from "@/pages/AdminDashboard";
 import FacultyDashboard from "@/pages/FacultyDashboard";
 import StudentDashboard from "@/pages/StudentDashboard";
@@ -36,6 +38,8 @@ function App() {
                             <Route path="/events" element={<Events />} />
                             <Route path="/events/:id" element={<EventDetail />} />
                             <Route path="/alumni" element={<Alumni />} />
+                            <Route path="/placements" element={<Placements />} />
+                            <Route path="/projects" element={<Projects />} />
                             <Route path="/contact" element={<Contact />} />
                             <Route path="/login" element={<Login />} />
                             <Route path="/register" element={<Register />} />
