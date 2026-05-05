@@ -33,13 +33,13 @@ export default function Contact() {
             <section className="section">
                 <div className="container-x grid lg:grid-cols-12 gap-12">
                     <aside className="lg:col-span-4 space-y-6">
-                        <Block icon={MapPin} title="Address" body={<>Cauvery College Gonikoppal,<br />Kodagu District, Karnataka 571213, India</>} />
-                        <Block icon={Phone} title="Phone" body="+91 8274 247 432 / +91 8274 247 433" />
-                        <Block icon={Mail} title="Email" body="info@ccauvery.edu" />
+                        <Block icon={MapPin} title="Address" body={<>5WM8+FJM, Virajpet-Mysore Rd,<br />Gonikoppa, Karnataka 571213, India</>} />
+                        <Block icon={Phone} title="Phone / WhatsApp" body="+91 78991 47627 (Mon — Fri, 9am — 5pm)" />
+                        <Block icon={Mail} title="Email" body="bcacauverycollege@gmail.com" />
                         <div className="rounded-2xl overflow-hidden border border-border">
                             <iframe
                                 title="map"
-                                src="https://maps.google.com/maps?q=Gonikoppal%20Karnataka&t=&z=13&ie=UTF8&iwloc=&output=embed"
+                                src="https://maps.google.com/maps?q=Cauvery%20College%20Gonikoppal&t=&z=15&ie=UTF8&iwloc=&output=embed"
                                 width="100%" height="280" loading="lazy" style={{ border: 0 }} />
                         </div>
                     </aside>

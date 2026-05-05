@@ -14,7 +14,7 @@ export default function Footer() {
                         </div>
                     </div>
                     <p className="text-white/70 text-sm leading-relaxed">
-                        Cauvery College Gonikoppal — empowering the next generation of leaders, innovators and changemakers since 1992.
+                        Cauvery College Gonikoppal — established 1968. Empowering rural Kodagu through quality education for over five decades. Named after Mother Cauvery, a symbol of purity, knowledge and service.
                     </p>
                 </div>
 
@@ -32,9 +32,9 @@ export default function Footer() {
                 <div>
                     <h4 className="font-outfit font-bold text-secondary mb-5 uppercase text-sm tracking-widest">Contact</h4>
                     <ul className="space-y-3 text-white/70 text-sm">
-                        <li className="flex gap-3"><MapPin className="w-4 h-4 text-secondary mt-1 shrink-0" /><span>Gonikoppal, Kodagu District,<br />Karnataka 571213, India</span></li>
-                        <li className="flex gap-3 items-center"><Phone className="w-4 h-4 text-secondary" /><span>+91 8274 247 432</span></li>
-                        <li className="flex gap-3 items-center"><Mail className="w-4 h-4 text-secondary" /><span>info@ccauvery.edu</span></li>
+                        <li className="flex gap-3"><MapPin className="w-4 h-4 text-secondary mt-1 shrink-0" /><span>5WM8+FJM, Virajpet-Mysore Rd,<br />Gonikoppa, Karnataka 571213, India</span></li>
+                        <li className="flex gap-3 items-center"><Phone className="w-4 h-4 text-secondary" /><span>+91 78991 47627</span></li>
+                        <li className="flex gap-3 items-center"><Mail className="w-4 h-4 text-secondary" /><span>bcacauverycollege@gmail.com</span></li>
                     </ul>
                 </div>
 
@@ -48,7 +48,7 @@ export default function Footer() {
                         ))}
                     </div>
                     <p className="text-xs text-white/50 mt-6 leading-relaxed">
-                        Affiliated to Ko University.<br />Recognized by UGC under 2(f) & 12(B).
+                        Affiliated to Mangalore University.<br />NAAC graded · 58+ years of legacy.
                     </p>
                 </div>
             </div>

@@ -61,17 +61,28 @@ export default function Admissions() {
                     <aside className="lg:col-span-4 space-y-6">
                         <div className="bg-white rounded-2xl p-7 border border-border">
                             <FileText className="w-8 h-8 text-secondary mb-4" />
-                            <h3 className="font-outfit font-bold text-xl text-primary mb-3">Documents required</h3>
+                            <h3 className="font-outfit font-bold text-xl text-primary mb-3">Admission Process</h3>
+                            <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                                <li>Submit the online application form below</li>
+                                <li>Visit campus / video call for counselling</li>
+                                <li>Verification of original 10th & 12th marksheets</li>
+                                <li>Pay first-instalment fee to confirm seat</li>
+                                <li>Receive admission letter & ID card</li>
+                            </ol>
+                        </div>
+                        <div className="bg-white rounded-2xl p-7 border border-border">
+                            <h3 className="font-outfit font-bold text-xl text-primary mb-3">Documents Required</h3>
                             <ul className="text-sm text-muted-foreground space-y-2">
-                                <li>• 10th & 12th marksheets</li>
-                                <li>• Transfer certificate</li>
+                                <li>• 10th & 12th (PUC) marksheets</li>
+                                <li>• Transfer Certificate (TC)</li>
+                                <li>• Migration Certificate (if applicable)</li>
                                 <li>• Aadhaar / ID proof</li>
-                                <li>• 4 passport-size photos</li>
-                                <li>• Caste certificate (if applicable)</li>
+                                <li>• 6 passport-size photos</li>
+                                <li>• Caste / Income certificate (if applicable)</li>
                             </ul>
                         </div>
                         <div className="bg-primary text-white rounded-2xl p-7">
-                            <h3 className="font-outfit font-bold text-xl mb-4">Annual fees</h3>
+                            <h3 className="font-outfit font-bold text-xl mb-4">Annual Tuition Fees</h3>
                             <ul className="space-y-2 text-sm text-white/85">
                                 {courses.map(c => (
                                     <li key={c.code} className="flex justify-between border-b border-white/10 pb-2">
@@ -80,7 +91,7 @@ export default function Admissions() {
                                     </li>
                                 ))}
                             </ul>
-                            <p className="text-xs text-white/60 mt-4">* Fees inclusive of tuition. Hostel & exam fees additional.</p>
+                            <p className="text-xs text-white/60 mt-4">* Scholarships available for SC/ST/OBC, sports & meritorious students. Hostel & exam fees additional.</p>
                         </div>
                     </aside>
 

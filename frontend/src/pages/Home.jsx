@@ -5,26 +5,26 @@ import CountUp from "react-countup";
 import { ArrowRight, Award, BookOpen, Users, GraduationCap, Sparkles, Calendar, ChevronRight } from "lucide-react";
 import api from "@/lib/api";
 
-const HERO = "https://images.pexels.com/photos/27238168/pexels-photo-27238168.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=900&w=1600";
+const HERO = "https://res.cloudinary.com/dveiiup8m/image/upload/v1777906329/gallery-assets/college/6.png";
 
 const STATS = [
-    { value: 32, suffix: "+", label: "Years of Excellence" },
-    { value: 5400, suffix: "+", label: "Alumni Worldwide" },
-    { value: 95, suffix: "%", label: "Placement Record" },
-    { value: 60, suffix: "+", label: "Expert Faculty" },
+    { value: 58, suffix: "+", label: "Years of Legacy" },
+    { value: 15000, suffix: "+", label: "Successful Alumni" },
+    { value: 98, suffix: "%", label: "Placement Rate" },
+    { value: 17, suffix: " Acres", label: "Lush Campus" },
 ];
 
 const HIGHLIGHTS = [
-    { icon: Award, title: "NAAC A+ Accredited", desc: "Among Karnataka's top-rated colleges with consistent academic excellence." },
-    { icon: BookOpen, title: "Industry Curriculum", desc: "Programs co-designed with employers — from AI labs to startup incubation." },
-    { icon: Users, title: "Mentor Network", desc: "1:1 mentorship from CXOs, founders and senior alumni at top firms." },
-    { icon: GraduationCap, title: "Global Alumni", desc: "Graduates at Google, Microsoft, Flipkart, Big-4 and leading research labs." },
+    { icon: Award, title: "Established 1968", desc: "Over five decades of academic excellence in the heart of Kodagu (Coorg) — Karnataka." },
+    { icon: BookOpen, title: "Future-Ready Curriculum", desc: "AI, Full-Stack, Cloud & Data Science woven into a Mangalore University-affiliated syllabus." },
+    { icon: Users, title: "Industry Mentorship", desc: "Faculty + industry mentors + live projects with Infosys, Wipro, TCS, Capgemini & more." },
+    { icon: GraduationCap, title: "100% Placement Assistance", desc: "Dedicated placement cell — average ₹4.5 LPA, highest ₹12 LPA for BCA grads." },
 ];
 
 const TESTIMONIALS = [
-    { name: "Aarav Shenoy", role: "Software Engineer @ Google", quote: "CCAUVERY taught me to think first-principles. The hackathons and mentorship shaped me into the engineer I am today." },
-    { name: "Divya Krishnan", role: "Product Manager @ Flipkart", quote: "From classroom case studies to launching products that millions use — Cauvery gave me the grounding and confidence." },
-    { name: "Sneha Kamath", role: "Data Scientist @ Microsoft", quote: "Hands-on AI labs and supportive professors gave me the springboard I needed to enter top tech." },
+    { name: "Abhishek B N", role: "Software Engineer @ Equalize RCM · BCA 2023", quote: "The practical exposure and coding culture at Cauvery BCA helped me crack my placement with confidence." },
+    { name: "Shawn Codava K S", role: "Software Developer Intern · BCA 2024", quote: "From zero coding knowledge to deploying real apps — this journey was transformational." },
+    { name: "Prathvin T R", role: "Full Stack Developer @ Invenzo Labs · BCA 2022", quote: "The mentorship and real-world projects gave me an edge over others in interviews." },
 ];
 
 export default function Home() {
@@ -53,16 +53,16 @@ export default function Home() {
                     <div className="max-w-3xl">
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
                             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-dark text-secondary text-sm font-medium mb-6">
-                            <Sparkles className="w-4 h-4" /> Admissions Open 2026 — 27
+                            <Sparkles className="w-4 h-4" /> Admissions Open • 2026 — 27
                         </motion.div>
                         <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }}
                             className="font-outfit font-black text-white text-5xl md:text-6xl lg:text-7xl leading-[1.05] tracking-tight">
-                            Empowering Education<br />
-                            <span className="text-secondary">for the Future.</span>
+                            Education for<br />
+                            <span className="text-secondary">Self-Reliance & Self-Realization.</span>
                         </motion.h1>
                         <motion.p initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.25 }}
                             className="mt-6 text-white/85 text-lg md:text-xl max-w-2xl leading-relaxed">
-                            At Cauvery College Gonikoppal, we shape thinkers, builders and leaders through industry-aligned programs and a vibrant campus rooted in tradition.
+                            Established in 1968 and named after Mother Cauvery, Cauvery College Gonikoppal has shaped over 15,000 graduates across 58 years — empowering rural youth of Kodagu (Coorg) with knowledge, skills and values for a global stage.
                         </motion.p>
                         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.4 }}
                             className="mt-10 flex flex-col sm:flex-row gap-4">
@@ -100,7 +100,7 @@ export default function Home() {
                     <div className="max-w-2xl mb-14">
                         <p className="text-secondary text-sm font-bold uppercase tracking-[0.25em] mb-3">Why CCAUVERY</p>
                         <h2 className="font-outfit font-black text-4xl lg:text-5xl text-primary leading-tight">
-                            A college built for what's <span className="italic text-secondary">next</span>.
+                            A choice that makes the <span className="italic text-secondary">difference</span>.
                         </h2>
                     </div>
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -133,7 +133,7 @@ export default function Home() {
                     </div>
                     <div className="grid md:grid-cols-3 gap-6">
                         {[
-                            { code: "BCA", name: "Computer Applications", img: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=900&q=80" },
+                            { code: "BCA", name: "Computer Applications", img: "https://res.cloudinary.com/dveiiup8m/image/upload/v1777906273/gallery-assets/bca/lab/lab.png" },
                             { code: "BBA", name: "Business Administration", img: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=900&q=80" },
                             { code: "BCOM", name: "Commerce", img: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=900&q=80" },
                         ].map((c, i) => (
